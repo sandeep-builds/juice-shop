@@ -23,6 +23,13 @@ export function servePublicFiles () {
   }
 
   function verify (file: string, res: Response, next: NextFunction) {
+    // SECURITY FIX (TASK-004): Reject null bytes before extension check to prevent bypass
+    if (file.includes('%00') || file.includes('\x00')) {
+      res.status(403)
+      next(new Error('File names cannot contain null bytes!'))
+      return
+    }
+
     if (file && (endsWithAllowlistedFileType(file) || (file === 'incident-support.kdbx'))) {
       file = security.cutOffPoisonNullByte(file)
 
