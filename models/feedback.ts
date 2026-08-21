@@ -40,13 +40,12 @@ const FeedbackModelInit = (sequelize: Sequelize) => {
         type: DataTypes.STRING,
         set (comment: string) {
           let sanitizedComment: string
+          // SECURITY FIX (TASK-003): Always use strict sanitization to prevent stored XSS
+          sanitizedComment = security.sanitizeSecure(comment)
           if (utils.isChallengeEnabled(challenges.persistedXssFeedbackChallenge)) {
-            sanitizedComment = security.sanitizeHtml(comment)
             challengeUtils.solveIf(challenges.persistedXssFeedbackChallenge, () => {
-              return sanitizedComment?.includes('<iframe src="javascript:alert(`xss`)">') ?? false
+              return comment?.includes('<iframe src="javascript:alert(`xss`)">') ?? false
             })
-          } else {
-            sanitizedComment = security.sanitizeSecure(comment)
           }
           this.setDataValue('comment', sanitizedComment)
         }
